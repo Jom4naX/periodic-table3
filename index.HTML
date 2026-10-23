@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Interactive Periodic Table</title>
+    <style>
+        :root {
+            --bg-color: #060709;
+            --card-bg: rgba(15, 17, 24, 0.9);
+            --transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        /* Top Layout Header */
+        .top-bar {
+            display: flex;
+            width: 100%;
+            max-width: 1350px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+
+        /* Detailed Info Card */
+        .ultra-details-card {
+            width: 480px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--active-color, #ff4757);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            gap: 16px;
+            box-shadow: 0 0 25px var(--active-color, #ff4757);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+
+        .card-preview-box {
+            width: 105px;
+            height: 110px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--active-color, #ff4757);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+
+        .card-preview-box .num { font-size: 11px; color: #fff; opacity: 0.8; }
+        .card-preview-box .sym { font-size: 32px; font-weight: 800; text-align: center; color: var(--active-color, #ff4757); text-shadow: 0 0 10px currentColor; line-height: 1; }
+        .card-preview-box .nm { font-size: 10px; text-align: center; color: #fff; font-weight: 600; }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 12px;
+            font-size: 11px;
+            color: #b0b5c0;
+            width: 100%;
+            align-content: center;
+        }
+
+        .details-grid div {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 2px;
+        }
+
+        .details-grid div span {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Filter Navigation Buttons */
+        .categories-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+            max-width: 850px;
+        }
+
+        .cat-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #8a8d9b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .cat-btn:hover, .cat-btn.active {
+            color: #ffffff;
+            border-color: currentColor;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Category Colors & Glows */
+        [data-category="alkali"] { --cat-color: #ff4757; }
+        [data-category="alkaline"] { --cat-color: #ffa502; }
+        [data-category="lanthanide"] { --cat-color: #e056fd; }
+        [data-category="actinide"] { --cat-color: #ff7979; }
+        [data-category="transition"] { --cat-color: #ff5252; }
+        [data-category="post-transition"] { --cat-color: #70a1ff; }
+        [data-category="metalloid"] { --cat-color: #00d2d3; }
+        [data-category="nonmetal"] { --cat-color: #2ed573; }
+        [data-category="noble"] { --cat-color: #1e90ff; }
+        [data-category="unknown"] { --cat-color: #a4b0be; }
+
+        /* Periodic Table Grid Layout */
+        .table-container {
+            position: relative;
+            padding: 10px;
+        }
+
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(62px, 1fr));
+            grid-template-rows: repeat(10, minmax(62px, 1fr));
+            gap: 4px;
+            width: 100%;
+            max-width: 1250px;
+        }
+
+        /* Element Card */
+        .element {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 3px 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--cat-color);
+            backdrop-filter: blur(4px);
+        }
+
+        .element .number { font-size: 8px; opacity: 0.75; color: #ffffff; }
+        .element .symbol { font-size: 16px; font-weight: 700; text-align: center; line-height: 1; margin: 2px 0; color: var(--cat-color); text-shadow: 0 0 5px currentColor; }
+        .element .name { font-size: 7.5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #d1d5db; }
+        .element .mass { font-size: 7px; text-align: center; color: #718093; }
+
+        .element:hover {
+            transform: scale(1.3);
+            z-index: 100;
+            background-color: #0c0d12;
+            border-color: var(--cat-color);
+            box-shadow: 0 0 15px var(--cat-color);
+        }
+
+        .element.selected {
+            border: 2px solid var(--cat-color);
+            box-shadow: 0 0 18px var(--cat-color);
+            transform: scale(1.1);
+            z-index: 90;
+        }
+
+        .element.dimmed {
+            opacity: 0.12;
+            filter: grayscale(85%);
+        }
+
+        .element-placeholder {
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            background: transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div class="top-bar">
+        <!-- Detailed Element Preview Card -->
+        <div class="ultra-details-card" id="ultraCard" style="--active-color: #ff4757;">
+            <div class="card-preview-box" id="previewBox" style="--active-color: #ff4757;">
+                <span class="num" id="detNum">1</span>
+                <span class="sym" id="detSym">H</span>
+                <span class="nm" id="detName">Hydrogen</span>
+            </div>
+            <div class="details-grid">
+                <div>Mass: <span id="detMass">1.008 u</span></div>
+                <div>Category: <span id="detCat">Nonmetal</span></div>
+                <div>Phase: <span id="detPhase">Gas</span></div>
+                <div>Group / Period: <span id="detGP">1 / 1</span></div>
+                <div>Electronegativity: <span id="detEN">2.20</span></div>
+                <div>Density: <span id="detDensity">0.0899 g/L</span></div>
+                <div>Melting Point: <span id="detMelt">13.99 K</span></div>
+                <div>Boiling Point: <span id="detBoil">20.27 K</span></div>
+                <div>Ionization: <span id="detIE">1312 kJ/mol</span></div>
+                <div>Config: <span id="detConfig">1s¹</span></div>
+            </div>
+        </div>
+
+        <!-- Filter Categories (Including Unknown Button) -->
+        <div class="categories-nav" id="categoryNav">
+            <button class="cat-btn active" data-category="all">All</button>
+            <button class="cat-btn" data-category="alkali" style="color: #ff4757">Alkali Metals</button>
+            <button class="cat-btn" data-category="alkaline" style="color: #ffa502">Alkaline Earth</button>
+            <button class="cat-btn" data-category="lanthanide" style="color: #e056fd">Lanthanides</button>
+            <button class="cat-btn" data-category="actinide" style="color: #ff7979">Actinides</button>
+            <button class="cat-btn" data-category="transition" style="color: #ff5252">Transition Metals</button>
+            <button class="cat-btn" data-category="post-transition" style="color: #70a1ff">Post-Transition</button>
+            <button class="cat-btn" data-category="metalloid" style="color: #00d2d3">Metalloids</button>
+            <button class="cat-btn" data-category="nonmetal" style="color: #2ed573">Other Nonmetals</button>
+            <button class="cat-btn" data-category="noble" style="color: #1e90ff">Noble Gases</button>
+            <button class="cat-btn" data-category="unknown" style="color: #a4b0be">Unknown</button>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+        <div class="periodic-table" id="periodicTable"></div>
+    </div>
+
+    <script>
+        const elementsData = [
+            // Period 1
+            { n: 1, s: "H", name: "Hydrogen", m: "1.008", c: "nonmetal", phase: "Gas", gp: "1 / 1", en: "2.20", density: "0.0899 g/L", melt: "13.99 K", boil: "20.27 K", ie: "1312 kJ/mol", config: "1s¹", col: 1, row: 1 },
+            { n: 2, s: "He", name: "Helium", m: "4.003", c: "noble", phase: "Gas", gp: "18 / 1", en: "—", density: "0.1785 g/L", melt: "0.95 K", boil: "4.22 K", ie: "2372 kJ/mol", config: "1s²", col: 18, row: 1 },
+            
+            // Period 2
+            { n: 3, s: "Li", name: "Lithium", m: "6.94", c: "alkali", phase: "Solid", gp: "1 / 2", en: "0.98", density: "0.534 g/cm³", melt: "453.65 K", boil: "1603 K", ie: "520 kJ/mol", config: "[He] 2s¹", col: 1, row: 2 },
+            { n: 4, s: "Be", name: "Beryllium", m: "9.012", c: "alkaline", phase: "Solid", gp: "2 / 2", en: "1.57", density: "1.85 g/cm³", melt: "1560 K", boil: "2742 K", ie: "900 kJ/mol", config: "[He] 2s²", col: 2, row: 2 },
+            { n: 5, s: "B", name: "Boron", m: "10.81", c: "metalloid", phase: "Solid", gp: "13 / 2", en: "2.04", density: "2.34 g/cm³", melt: "2349 K", boil: "4200 K", ie: "801 kJ/mol", config: "[He] 2s² 2p¹", col: 13, row: 2 },
+            { n: 6, s: "C", name: "Carbon", m: "12.011", c: "nonmetal", phase: "Solid", gp: "14 / 2", en: "2.55", density: "2.267 g/cm³", melt: "3823 K", boil: "4300 K", ie: "1086 kJ/mol", config: "[He] 2s² 2p²", col: 14, row: 2 },
+            { n: 7, s: "N", name: "Nitrogen", m: "14.007", c: "nonmetal", phase: "Gas", gp: "15 / 2", en: "3.04", density: "1.251 g/L", melt: "63.15 K", boil: "77.36 K", ie: "1402 kJ/mol", config: "[He] 2s² 2p³", col: 15, row: 2 },
+            { n: 8, s: "O", name: "Oxygen", m: "15.999", c: "nonmetal", phase: "Gas", gp: "16 / 2", en: "3.44", density: "1.429 g/L", melt: "54.36 K", boil: "90.19 K", ie: "1314 kJ/mol", config: "[He] 2s² 2p⁴", col: 16, row: 2 },
+            { n: 9, s: "F", name: "Fluorine", m: "18.998", c: "nonmetal", phase: "Gas", gp: "17 / 2", en: "3.98", density: "1.696 g/L", melt: "53.48 K", boil: "85.03 K", ie: "1681 kJ/mol", config: "[He] 2s² 2p⁵", col: 17, row: 2 },
+            { n: 10, s: "Ne", name: "Neon", m: "20.180", c: "noble", phase: "Gas", gp: "18 / 2", en: "—", density: "0.900 g/L", melt: "24.56 K", boil: "27.10 K", ie: "2081 kJ/mol", config: "[He] 2s² 2p⁶", col: 18, row: 2 },
+
+            // Period 3
+            { n: 11, s: "Na", name: "Sodium", m: "22.990", c: "alkali", phase: "Solid", gp: "1 / 3", en: "0.93", density: "0.968 g/cm³", melt: "370.94 K", boil: "1156 K", ie: "496 kJ/mol", config: "[Ne] 3s¹", col: 1, row: 3 },
+            { n: 12, s: "Mg", name: "Magnesium", m: "24.305", c: "alkaline", phase: "Solid", gp: "2 / 3", en: "1.31", density: "1.738 g/cm³", melt: "923 K", boil: "1363 K", ie: "738 kJ/mol", config: "[Ne] 3s²", col: 2, row: 3 },
+            { n: 13, s: "Al", name: "Aluminum", m: "26.982", c: "post-transition", phase: "Solid", gp: "13 / 3", en: "1.61", density: "2.70 g/cm³", melt: "933.47 K", boil: "2743 K", ie: "578 kJ/mol", config: "[Ne] 3s² 3p¹", col: 13, row: 3 },
+            { n: 14, s: "Si", name: "Silicon", m: "28.085", c: "metalloid", phase: "Solid", gp: "14 / 3", en: "1.90", density: "2.329 g/cm³", melt: "1687 K", boil: "3538 K", ie: "787 kJ/mol", config: "[Ne] 3s² 3p²", col: 14, row: 3 },
+            { n: 15, s: "P", name: "Phosphorus", m: "30.974", c: "nonmetal", phase: "Solid", gp: "15 / 3", en: "2.19", density: "1.823 g/cm³", melt: "317.3 K", boil: "553.7 K", ie: "1012 kJ/mol", config: "[Ne] 3s² 3p³", col: 15, row: 3 },
+            { n: 16, s: "S", name: "Sulfur", m: "32.06", c: "nonmetal", phase: "Solid", gp: "16 / 3", en: "2.58", density: "2.07 g/cm³", melt: "388.36 K", boil: "717.8 K", ie: "1000 kJ/mol", config: "[Ne] 3s² 3p⁴", col: 16, row: 3 },
+            { n: 17, s: "Cl", name: "Chlorine", m: "35.45", c: "nonmetal", phase: "Gas", gp: "17 / 3", en: "3.16", density: "3.214 g/L", melt: "171.6 K", boil: "239.11 K", ie: "1251 kJ/mol", config: "[Ne] 3s² 3p⁵", col: 17, row: 3 },
+            { n: 18, s: "Ar", name: "Argon", m: "39.948", c: "noble", phase: "Gas", gp: "18 / 3", en: "—", density: "1.784 g/L", melt: "83.81 K", boil: "87.30 K", ie: "1521 kJ/mol", config: "[Ne] 3s² 3p⁶", col: 18, row: 3 },
+
+            // Period 4
+            { n: 19, s: "K", name: "Potassium", m: "39.098", c: "alkali", phase: "Solid", gp: "1 / 4", en: "0.82", density: "0.862 g/cm³", melt: "336.7 K", boil: "1032 K", ie: "419 kJ/mol", config: "[Ar] 4s¹", col: 1, row: 4 },
+            { n: 20, s: "Ca", name: "Calcium", m: "40.078", c: "alkaline", phase: "Solid", gp: "2 / 4", en: "1.00", density: "1.55 g/cm³", melt: "1115 K", boil: "1757 K", ie: "590 kJ/mol", config: "[Ar] 4s²", col: 2, row: 4 },
+            { n: 21, s: "Sc", name: "Scandium", m: "44.956", c: "transition", phase: "Solid", gp: "3 / 4", en: "1.36", density: "2.985 g/cm³", melt: "1814 K", boil: "3109 K", ie: "633 kJ/mol", config: "[Ar] 3d¹ 4s²", col: 3, row: 4 },
+            { n: 22, s: "Ti", name: "Titanium", m: "47.867", c: "transition", phase: "Solid", gp: "4 / 4", en: "1.54", density: "4.506 g/cm³", melt: "1941 K", boil: "3560 K", ie: "659 kJ/mol", config: "[Ar] 3d² 4s²", col: 4, row: 4 },
+            { n: 23, s: "V", name: "Vanadium", m: "50.942", c: "transition", phase: "Solid", gp: "5 / 4", en: "1.63", density: "6.11 g/cm³", melt: "2183 K", boil: "3680 K", ie: "651 kJ/mol", config: "[Ar] 3d³ 4s²", col: 5, row: 4 },
+            { n: 24, s: "Cr", name: "Chromium", m: "51.996", c: "transition", phase: "Solid", gp: "6 / 4", en: "1.66", density: "7.15 g/cm³", melt: "2180 K", boil: "2944 K", ie: "653 kJ/mol", config: "[Ar] 3d⁵ 4s¹", col: 6, row: 4 },
+            { n: 25, s: "Mn", name: "Manganese", m: "54.938", c: "transition", phase: "Solid", gp: "7 / 4", en: "1.55", density: "7.21 g/cm³", melt: "1519 K", boil: "2334 K", ie: "717 kJ/mol", config: "[Ar] 3d⁵ 4s²", col: 7, row: 4 },
+            { n: 26, s: "Fe", name: "Iron", m: "55.845", c: "transition", phase: "Solid", gp: "8 / 4", en: "1.83", density: "7.874 g/cm³", melt: "1811 K", boil: "3134 K", ie: "762 kJ/mol", config: "[Ar] 3d⁶ 4s²", col: 8, row: 4 },
+            { n: 27, s: "Co", name: "Cobalt", m: "58.933", c: "transition", phase: "Solid", gp: "9 / 4", en: "1.88", density: "8.90 g/cm³", melt: "1768 K", boil: "3200 K", ie: "760 kJ/mol", config: "[Ar] 3d⁷ 4s²", col: 9, row: 4 },
+            { n: 28, s: "Ni", name: "Nickel", m: "58.693", c: "transition", phase: "Solid", gp: "10 / 4", en: "1.91", density: "9.08 g/cm³", melt: "1728 K", boil: "3030 K", ie: "737 kJ/mol", config: "[Ar] 3d⁸ 4s²", col: 10, row: 4 },
+            { n: 29, s: "Cu", name: "Copper", m: "63.546", c: "transition", phase: "Solid", gp: "11 / 4", en: "1.90", density: "8.96 g/cm³", melt: "1357.77 K", boil: "2835 K", ie: "746 kJ/mol", config: "[Ar] 3d¹⁰ 4s¹", col: 11, row: 4 },
+            { n: 30, s: "Zn", name: "Zinc", m: "65.38", c: "transition", phase: "Solid", gp: "12 / 4", en: "1.65", density: "7.14 g/cm³", melt: "692.68 K", boil: "1180 K", ie: "906 kJ/mol", config: "[Ar] 3d¹⁰ 4s²", col: 12, row: 4 },
+            { n: 31, s: "Ga", name: "Gallium", m: "69.723", c: "post-transition", phase: "Solid", gp: "13 / 4", en: "1.81", density: "5.91 g/cm³", melt: "302.91 K", boil: "2477 K", ie: "579 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p¹", col: 13, row: 4 },
+            { n: 32, s: "Ge", name: "Germanium", m: "72.630", c: "metalloid", phase: "Solid", gp: "14 / 4", en: "2.01", density: "5.323 g/cm³", melt: "1211.4 K", boil: "3106 K", ie: "762 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p²", col: 14, row: 4 },
+            { n: 33, s: "As", name: "Arsenic", m: "74.922", c: "metalloid", phase: "Solid", gp: "15 / 4", en: "2.18", density: "5.727 g/cm³", melt: "1090 K", boil: "887 K (subl.)", ie: "947 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p³", col: 15, row: 4 },
+            { n: 34, s: "Se", name: "Selenium", m: "78.971", c: "nonmetal", phase: "Solid", gp: "16 / 4", en: "2.55", density: "4.81 g/cm³", melt: "494 K", boil: "958 K", ie: "941 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p⁴", col: 16, row: 4 },
+            { n: 35, s: "Br", name: "Bromine", m: "79.904", c: "nonmetal", phase: "Liquid", gp: "17 / 4", en: "2.96", density: "3.12 g/cm³", melt: "265.8 K", boil: "332 K", ie: "1140 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p⁵", col: 17, row: 4 },
+            { n: 36, s: "Kr", name: "Krypton", m: "83.798", c: "noble", phase: "Gas", gp: "18 / 4", en: "3.00", density: "3.75 g/L", melt: "115.79 K", boil: "119.93 K", ie: "1351 kJ/mol", config: "[Ar] 3d¹⁰ 4s² 4p⁶", col: 18, row: 4 },
+
+            // Period 5
+            { n: 37, s: "Rb", name: "Rubidium", m: "85.468", c: "alkali", phase: "Solid", gp: "1 / 5", en: "0.82", density: "1.532 g/cm³", melt: "312.46 K", boil: "961 K", ie: "403 kJ/mol", config: "[Kr] 5s¹", col: 1, row: 5 },
+            { n: 38, s: "Sr", name: "Strontium", m: "87.62", c: "alkaline", phase: "Solid", gp: "2 / 5", en: "0.95", density: "2.64 g/cm³", melt: "1050 K", boil: "1655 K", ie: "549 kJ/mol", config: "[Kr] 5s²", col: 2, row: 5 },
+            { n: 39, s: "Y", name: "Yttrium", m: "88.906", c: "transition", phase: "Solid", gp: "3 / 5", en: "1.22", density: "4.47 g/cm³", melt: "1799 K", boil: "3609 K", ie: "600 kJ/mol", config: "[Kr] 4d¹ 5s²", col: 3, row: 5 },
+            { n: 40, s: "Zr", name: "Zirconium", m: "91.224", c: "transition", phase: "Solid", gp: "4 / 5", en: "1.33", density: "6.52 g/cm³", melt: "2128 K", boil: "4682 K", ie: "640 kJ/mol", config: "[Kr] 4d² 5s²", col: 4, row: 5 },
+            { n: 41, s: "Nb", name: "Niobium", m: "92.906", c: "transition", phase: "Solid", gp: "5 / 5", en: "1.6", density: "8.57 g/cm³", melt: "2750 K", boil: "5017 K", ie: "652 kJ/mol", config: "[Kr] 4d⁴ 5s¹", col: 5, row: 5 },
+            { n: 42, s: "Mo", name: "Molybdenum", m: "95.95", c: "transition", phase: "Solid", gp: "6 / 5", en: "2.16", density: "10.28 g/cm³", melt: "2896 K", boil: "4912 K", ie: "684 kJ/mol", config: "[Kr] 4d⁵ 5s¹", col: 6, row: 5 },
+            { n: 43, s: "Tc", name: "Technetium", m: "(98)", c: "transition", phase: "Solid", gp: "7 / 5", en: "1.9", density: "11.5 g/cm³", melt: "2430 K", boil: "4538 K", ie: "702 kJ/mol", config: "[Kr] 4d⁵ 5s²", col: 7, row: 5 },
+            { n: 44, s: "Ru", name: "Ruthenium", m: "101.07", c: "transition", phase: "Solid", gp: "8 / 5", en: "2.2", density: "12.37 g/cm³", melt: "2607 K", boil: "4423 K", ie: "710 kJ/mol", config: "[Kr] 4d⁷ 5s¹", col: 8, row: 5 },
+            { n: 45, s: "Rh", name: "Rhodium", m: "102.91", c: "transition", phase: "Solid", gp: "9 / 5", en: "2.28", density: "12.41 g/cm³", melt: "2237 K", boil: "3968 K", ie: "720 kJ/mol", config: "[Kr] 4d⁸ 5s¹", col: 9, row: 5 },
+            { n: 46, s: "Pd", name: "Palladium", m: "106.42", c: "transition", phase: "Solid", gp: "10 / 5", en: "2.20", density: "12.02 g/cm³", melt: "1828.05 K", boil: "3236 K", ie: "804 kJ/mol", config: "[Kr] 4d¹⁰", col: 10, row: 5 },
+            { n: 47, s: "Ag", name: "Silver", m: "107.87", c: "transition", phase: "Solid", gp: "11 / 5", en: "1.93", density: "10.49 g/cm³", melt: "1234.93 K", boil: "2435 K", ie: "731 kJ/mol", config: "[Kr] 4d¹⁰ 5s¹", col: 11, row: 5 },
+            { n: 48, s: "Cd", name: "Cadmium", m: "112.41", c: "transition", phase: "Solid", gp: "12 / 5", en: "1.69", density: "8.65 g/cm³", melt: "594.22 K", boil: "1040 K", ie: "867 kJ/mol", config: "[Kr] 4d¹⁰ 5s²", col: 12, row: 5 },
+            { n: 49, s: "In", name: "Indium", m: "114.82", c: "post-transition", phase: "Solid", gp: "13 / 5", en: "1.78", density: "7.31 g/cm³", melt: "429.75 K", boil: "2345 K", ie: "558 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p¹", col: 13, row: 5 },
+            { n: 50, s: "Sn", name: "Tin", m: "118.71", c: "post-transition", phase: "Solid", gp: "14 / 5", en: "1.96", density: "7.31 g/cm³", melt: "505.08 K", boil: "2875 K", ie: "709 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p²", col: 14, row: 5 },
+            { n: 51, s: "Sb", name: "Antimony", m: "121.76", c: "metalloid", phase: "Solid", gp: "15 / 5", en: "2.05", density: "6.697 g/cm³", melt: "903.78 K", boil: "1908 K", ie: "834 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p³", col: 15, row: 5 },
+            { n: 52, s: "Te", name: "Tellurium", m: "127.60", c: "metalloid", phase: "Solid", gp: "16 / 5", en: "2.1", density: "6.24 g/cm³", melt: "722.66 K", boil: "1261 K", ie: "869 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p⁴", col: 16, row: 5 },
+            { n: 53, s: "I", name: "Iodine", m: "126.90", c: "nonmetal", phase: "Solid", gp: "17 / 5", en: "2.66", density: "4.93 g/cm³", melt: "386.85 K", boil: "457.4 K", ie: "1008 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p⁵", col: 17, row: 5 },
+            { n: 54, s: "Xe", name: "Xenon", m: "131.29", c: "noble", phase: "Gas", gp: "18 / 5", en: "2.6", density: "5.89 g/L", melt: "161.4 K", boil: "165.05 K", ie: "1170 kJ/mol", config: "[Kr] 4d¹⁰ 5s² 5p⁶", col: 18, row: 5 },
+
+            // Period 6
+            { n: 55, s: "Cs", name: "Cesium", m: "132.91", c: "alkali", phase: "Solid", gp: "1 / 6", en: "0.79", density: "1.873 g/cm³", melt: "301.59 K", boil: "944 K", ie: "376 kJ/mol", config: "[Xe] 6s¹", col: 1, row: 6 },
+            { n: 56, s: "Ba", name: "Barium", m: "137.33", c: "alkaline", phase: "Solid", gp: "2 / 6", en: "0.89", density: "3.51 g/cm³", melt: "1000 K", boil: "2170 K", ie: "503 kJ/mol", config: "[Xe] 6s²", col: 2, row: 6 },
+            { n: 72, s: "Hf", name: "Hafnium", m: "178.49", c: "transition", phase: "Solid", gp: "4 / 6", en: "1.3", density: "13.31 g/cm³", melt: "2506 K", boil: "4876 K", ie: "659 kJ/mol", config: "[Xe] 4f¹⁴ 5d² 6s²", col: 4, row: 6 },
+            { n: 73, s: "Ta", name: "Tantalum", m: "180.95", c: "transition", phase: "Solid", gp: "5 / 6", en: "1.5", density: "16.69 g/cm³", melt: "3290 K", boil: "5731 K", ie: "761 kJ/mol", config: "[Xe] 4f¹⁴ 5d³ 6s²", col: 5, row: 6 },
+            { n: 74, s: "W", name: "Tungsten", m: "183.84", c: "transition", phase: "Solid", gp: "6 / 6", en: "2.36", density: "19.25 g/cm³", melt: "3695 K", boil: "5828 K", ie: "770 kJ/mol", config: "[Xe] 4f¹⁴ 5d⁴ 6s²", col: 6, row: 6 },
+            { n: 75, s: "Re", name: "Rhenium", m: "186.21", c: "transition", phase: "Solid", gp: "7 / 6", en: "1.9", density: "21.02 g/cm³", melt: "3459 K", boil: "5869 K", ie: "760 kJ/mol", config: "[Xe] 4f¹⁴ 5d⁵ 6s²", col: 7, row: 6 },
+            { n: 76, s: "Os", name: "Osmium", m: "190.23", c: "transition", phase: "Solid", gp: "8 / 6", en: "2.2", density: "22.59 g/cm³", melt: "3306 K", boil: "5285 K", ie: "840 kJ/mol", config: "[Xe] 4f¹⁴ 5d⁶ 6s²", col: 8, row: 6 },
+            { n: 77, s: "Ir", name: "Iridium", m: "192.22", c: "transition", phase: "Solid", gp: "9 / 6", en: "2.20", density: "22.56 g/cm³", melt: "2719 K", boil: "4701 K", ie: "880 kJ/mol", config: "[Xe] 4f¹⁴ 5d⁷ 6s²", col: 9, row: 6 },
+            { n: 78, s: "Pt", name: "Platinum", m: "195.08", c: "transition", phase: "Solid", gp: "10 / 6", en: "2.28", density: "21.45 g/cm³", melt: "2041.4 K", boil: "4098 K", ie: "870 kJ/mol", config: "[Xe] 4f¹⁴ 5d⁹ 6s¹", col: 10, row: 6 },
+            { n: 79, s: "Au", name: "Gold", m: "196.97", c: "transition", phase: "Solid", gp: "11 / 6", en: "2.54", density: "19.3 g/cm³", melt: "1337.33 K", boil: "3243 K", ie: "890 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹", col: 11, row: 6 },
+            { n: 80, s: "Hg", name: "Mercury", m: "200.59", c: "transition", phase: "Liquid", gp: "12 / 6", en: "2.00", density: "13.534 g/cm³", melt: "234.32 K", boil: "629.88 K", ie: "1007 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s²", col: 12, row: 6 },
+            { n: 81, s: "Tl", name: "Thallium", m: "204.38", c: "post-transition", phase: "Solid", gp: "13 / 6", en: "1.62", density: "11.85 g/cm³", melt: "577 K", boil: "1746 K", ie: "589 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹", col: 13, row: 6 },
+            { n: 82, s: "Pb", name: "Lead", m: "207.2", c: "post-transition", phase: "Solid", gp: "14 / 6", en: "1.87", density: "11.34 g/cm³", melt: "600.61 K", boil: "2022 K", ie: "716 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²", col: 14, row: 6 },
+            { n: 83, s: "Bi", name: "Bismuth", m: "208.98", c: "post-transition", phase: "Solid", gp: "15 / 6", en: "2.02", density: "9.78 g/cm³", melt: "544.7 K", boil: "1837 K", ie: "703 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³", col: 15, row: 6 },
+            { n: 84, s: "Po", name: "Polonium", m: "(209)", c: "post-transition", phase: "Solid", gp: "16 / 6", en: "2.0", density: "9.20 g/cm³", melt: "527 K", boil: "1235 K", ie: "812 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴", col: 16, row: 6 },
+            { n: 85, s: "At", name: "Astatine", m: "(210)", c: "metalloid", phase: "Solid", gp: "17 / 6", en: "2.2", density: "7.0 g/cm³", melt: "575 K", boil: "610 K", ie: "920 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵", col: 17, row: 6 },
+            { n: 86, s: "Rn", name: "Radon", m: "(222)", c: "noble", phase: "Gas", gp: "18 / 6", en: "2.2", density: "9.73 g/L", melt: "202 K", boil: "211.3 K", ie: "1037 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶", col: 18, row: 6 },
+
+            // Period 7
+            { n: 87, s: "Fr", name: "Francium", m: "(223)", c: "alkali", phase: "Solid", gp: "1 / 7", en: "0.7", density: "1.87 g/cm³", melt: "281 K", boil: "950 K", ie: "380 kJ/mol", config: "[Rn] 7s¹", col: 1, row: 7 },
+            { n: 88, s: "Ra", name: "Radium", m: "(226)", c: "alkaline", phase: "Solid", gp: "2 / 7", en: "0.9", density: "5.5 g/cm³", melt: "973 K", boil: "2010 K", ie: "509 kJ/mol", config: "[Rn] 7s²", col: 2, row: 7 },
+            { n: 104, s: "Rf", name: "Rutherfordium", m: "(267)", c: "transition", phase: "Solid", gp: "4 / 7", en: "—", density: "23.2 g/cm³", melt: "2400 K", boil: "5800 K", ie: "580 kJ/mol", config: "[Rn] 5f¹⁴ 6d² 7s²", col: 4, row: 7 },
+            { n: 105, s: "Db", name: "Dubnium", m: "(268)", c: "transition", phase: "Solid", gp: "5 / 7", en: "—", density: "29.3 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d³ 7s²", col: 5, row: 7 },
+            { n: 106, s: "Sg", name: "Seaborgium", m: "(269)", c: "transition", phase: "Solid", gp: "6 / 7", en: "—", density: "35.0 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁴ 7s²", col: 6, row: 7 },
+            { n: 107, s: "Bh", name: "Bohrium", m: "(270)", c: "transition", phase: "Solid", gp: "7 / 7", en: "—", density: "37.1 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁵ 7s²", col: 7, row: 7 },
+            { n: 108, s: "Hs", name: "Hassium", m: "(277)", c: "transition", phase: "Solid", gp: "8 / 7", en: "—", density: "40.7 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁶ 7s²", col: 8, row: 7 },
+            { n: 109, s: "Mt", name: "Meitnerium", m: "(278)", c: "unknown", phase: "Solid", gp: "9 / 7", en: "—", density: "37.4 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁷ 7s²", col: 9, row: 7 },
+            { n: 110, s: "Ds", name: "Darmstadtium", m: "(281)", c: "unknown", phase: "Solid", gp: "10 / 7", en: "—", density: "34.8 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁸ 7s²", col: 10, row: 7 },
+            { n: 111, s: "Rg", name: "Roentgenium", m: "(282)", c: "unknown", phase: "Solid", gp: "11 / 7", en: "—", density: "28.7 g/cm³", melt: "—", boil: "—", ie: "—", config: "[Rn] 5f¹⁴ 6d⁹ 7s²", col: 11, row: 7 },
+            { n: 112, s: "Cn", name: "Copernicium", m: "(285)", c: "post-transition", phase: "Gas", gp: "12 / 7", en: "—", density: "14.0 g/cm³", melt: "283 K", boil: "340 K", ie: "1155 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s²", col: 12, row: 7 },
+            { n: 113, s: "Nh", name: "Nihonium", m: "(286)", c: "unknown", phase: "Solid", gp: "13 / 7", en: "—", density: "16.0 g/cm³", melt: "700 K", boil: "1430 K", ie: "704.9 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹", col: 13, row: 7 },
+            { n: 114, s: "Fl", name: "Flerovium", m: "(289)", c: "post-transition", phase: "Solid", gp: "14 / 7", en: "—", density: "14.0 g/cm³", melt: "340 K", boil: "420 K", ie: "823.9 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²", col: 14, row: 7 },
+            { n: 115, s: "Mc", name: "Moscovium", m: "(290)", c: "unknown", phase: "Solid", gp: "15 / 7", en: "—", density: "13.5 g/cm³", melt: "670 K", boil: "1400 K", ie: "538.4 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³", col: 15, row: 7 },
+            { n: 116, s: "Lv", name: "Livermorium", m: "(293)", c: "unknown", phase: "Solid", gp: "16 / 7", en: "—", density: "12.9 g/cm³", melt: "708 K", boil: "1035 K", ie: "723.3 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴", col: 16, row: 7 },
+            { n: 117, s: "Ts", name: "Tennessine", m: "(294)", c: "unknown", phase: "Solid", gp: "17 / 7", en: "—", density: "7.2 g/cm³", melt: "723 K", boil: "883 K", ie: "737.4 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵", col: 17, row: 7 },
+            { n: 118, s: "Og", name: "Oganesson", m: "(294)", c: "unknown", phase: "Gas", gp: "18 / 7", en: "—", density: "5.0 g/cm³", melt: "325 K", boil: "450 K", ie: "839.4 kJ/mol", config: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶", col: 18, row: 7 },
+
+            // Lanthanides (Row 9)
+            { n: 57, s: "La", name: "Lanthanum", m: "138.91", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.10", density: "6.16 g/cm³", melt: "1193 K", boil: "3737 K", ie: "538 kJ/mol", config: "[Xe] 5d¹ 6s²", col: 3, row: 9 },
+            { n: 58, s: "Ce", name: "Cerium", m: "140.12", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.12", density: "6.77 g/cm³", melt: "1068 K", boil: "3716 K", ie: "534 kJ/mol", config: "[Xe] 4f¹ 5d¹ 6s²", col: 4, row: 9 },
+            { n: 59, s: "Pr", name: "Praseodymium", m: "140.91", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.13", density: "6.77 g/cm³", melt: "1208 K", boil: "3793 K", ie: "527 kJ/mol", config: "[Xe] 4f³ 6s²", col: 5, row: 9 },
+            { n: 60, s: "Nd", name: "Neodymium", m: "144.24", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.14", density: "7.01 g/cm³", melt: "1297 K", boil: "3347 K", ie: "533 kJ/mol", config: "[Xe] 4f⁴ 6s²", col: 6, row: 9 },
+            { n: 61, s: "Pm", name: "Promethium", m: "(145)", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.13", density: "7.26 g/cm³", melt: "1315 K", boil: "3273 K", ie: "540 kJ/mol", config: "[Xe] 4f⁵ 6s²", col: 7, row: 9 },
+            { n: 62, s: "Sm", name: "Samarium", m: "150.36", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.17", density: "7.52 g/cm³", melt: "1345 K", boil: "2067 K", ie: "545 kJ/mol", config: "[Xe] 4f⁶ 6s²", col: 8, row: 9 },
+            { n: 63, s: "Eu", name: "Europium", m: "151.96", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.2", density: "5.24 g/cm³", melt: "1099 K", boil: "1802 K", ie: "547 kJ/mol", config: "[Xe] 4f⁷ 6s²", col: 9, row: 9 },
+            { n: 64, s: "Gd", name: "Gadolinium", m: "157.25", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.20", density: "7.90 g/cm³", melt: "1585 K", boil: "3546 K", ie: "593 kJ/mol", config: "[Xe] 4f⁷ 5d¹ 6s²", col: 10, row: 9 },
+            { n: 65, s: "Tb", name: "Terbium", m: "158.93", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.2", density: "8.23 g/cm³", melt: "1629 K", boil: "3503 K", ie: "566 kJ/mol", config: "[Xe] 4f⁹ 6s²", col: 11, row: 9 },
+            { n: 66, s: "Dy", name: "Dysprosium", m: "162.50", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.22", density: "8.55 g/cm³", melt: "1680 K", boil: "2840 K", ie: "573 kJ/mol", config: "[Xe] 4f¹⁰ 6s²", col: 12, row: 9 },
+            { n: 67, s: "Ho", name: "Holmium", m: "164.93", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.23", density: "8.80 g/cm³", melt: "1734 K", boil: "2873 K", ie: "581 kJ/mol", config: "[Xe] 4f¹¹ 6s²", col: 13, row: 9 },
+            { n: 68, s: "Er", name: "Erbium", m: "167.26", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.24", density: "9.066 g/cm³", melt: "1802 K", boil: "3141 K", ie: "589 kJ/mol", config: "[Xe] 4f¹² 6s²", col: 14, row: 9 },
+            { n: 69, s: "Tm", name: "Thulium", m: "168.93", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.25", density: "9.32 g/cm³", melt: "1818 K", boil: "2223 K", ie: "597 kJ/mol", config: "[Xe] 4f¹³ 6s²", col: 15, row: 9 },
+            { n: 70, s: "Yb", name: "Ytterbium", m: "173.05", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.1", density: "6.90 g/cm³", melt: "1097 K", boil: "1469 K", ie: "603 kJ/mol", config: "[Xe] 4f¹⁴ 6s²", col: 16, row: 9 },
+            { n: 71, s: "Lu", name: "Lutetium", m: "174.97", c: "lanthanide", phase: "Solid", gp: "3 / 6", en: "1.27", density: "9.841 g/cm³", melt: "1925 K", boil: "3675 K", ie: "523.5 kJ/mol", config: "[Xe] 4f¹⁴ 5d¹ 6s²", col: 17, row: 9 },
+
+            // Actinides (Row 10)
+            { n: 89, s: "Ac", name: "Actinium", m: "(227)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.1", density: "10.07 g/cm³", melt: "1323 K", boil: "3471 K", ie: "499 kJ/mol", config: "[Rn] 6d¹ 7s²", col: 3, row: 10 },
+            { n: 90, s: "Th", name: "Thorium", m: "232.04", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "11.72 g/cm³", melt: "2023 K", boil: "5061 K", ie: "587 kJ/mol", config: "[Rn] 6d² 7s²", col: 4, row: 10 },
+            { n: 91, s: "Pa", name: "Protactinium", m: "231.04", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.5", density: "15.37 g/cm³", melt: "1841 K", boil: "4300 K", ie: "568 kJ/mol", config: "[Rn] 5f² 6d¹ 7s²", col: 5, row: 10 },
+            { n: 92, s: "U", name: "Uranium", m: "238.03", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.38", density: "19.1 g/cm³", melt: "1405.3 K", boil: "4404 K", ie: "597.6 kJ/mol", config: "[Rn] 5f³ 6d¹ 7s²", col: 6, row: 10 },
+            { n: 93, s: "Np", name: "Neptunium", m: "(237)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.36", density: "20.45 g/cm³", melt: "917 K", boil: "4175 K", ie: "604.5 kJ/mol", config: "[Rn] 5f⁴ 6d¹ 7s²", col: 7, row: 10 },
+            { n: 94, s: "Pu", name: "Plutonium", m: "(244)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.28", density: "19.86 g/cm³", melt: "912.5 K", boil: "3501 K", ie: "584.7 kJ/mol", config: "[Rn] 5f⁶ 7s²", col: 8, row: 10 },
+            { n: 95, s: "Am", name: "Americium", m: "(243)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "13.69 g/cm³", melt: "1449 K", boil: "2880 K", ie: "578 kJ/mol", config: "[Rn] 5f⁷ 7s²", col: 9, row: 10 },
+            { n: 96, s: "Cm", name: "Curium", m: "(247)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "13.51 g/cm³", melt: "1613 K", boil: "3383 K", ie: "581 kJ/mol", config: "[Rn] 5f⁷ 6d¹ 7s²", col: 10, row: 10 },
+            { n: 97, s: "Bk", name: "Berkelium", m: "(247)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "14.78 g/cm³", melt: "1259 K", boil: "2900 K", ie: "601 kJ/mol", config: "[Rn] 5f⁹ 7s²", col: 11, row: 10 },
+            { n: 98, s: "Cf", name: "Californium", m: "(251)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "15.1 g/cm³", melt: "1173 K", boil: "1743 K", ie: "608 kJ/mol", config: "[Rn] 5f¹⁰ 7s²", col: 12, row: 10 },
+            { n: 99, s: "Es", name: "Einsteinium", m: "(252)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "8.84 g/cm³", melt: "1133 K", boil: "1269 K", ie: "619 kJ/mol", config: "[Rn] 5f¹¹ 7s²", col: 13, row: 10 },
+            { n: 100, s: "Fm", name: "Fermium", m: "(257)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "—", melt: "1800 K", boil: "—", ie: "627 kJ/mol", config: "[Rn] 5f¹² 7s²", col: 14, row: 10 },
+            { n: 101, s: "Md", name: "Mendelevium", m: "(258)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "—", melt: "1100 K", boil: "—", ie: "635 kJ/mol", config: "[Rn] 5f¹³ 7s²", col: 15, row: 10 },
+            { n: 102, s: "No", name: "Nobelium", m: "(259)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "—", melt: "1100 K", boil: "—", ie: "642 kJ/mol", config: "[Rn] 5f¹⁴ 7s²", col: 16, row: 10 },
+            { n: 103, s: "Lr", name: "Lawrencium", m: "(266)", c: "actinide", phase: "Solid", gp: "3 / 7", en: "1.3", density: "—", melt: "1900 K", boil: "—", ie: "470 kJ/mol", config: "[Rn] 5f¹⁴ 7s² 7p¹", col: 17, row: 10 }
+        ];
+
+        const container = document.getElementById('periodicTable');
+        const ultraCard = document.getElementById('ultraCard');
+        const previewBox = document.getElementById('previewBox');
+
+        const placeholderLan = document.createElement('div');
+        placeholderLan.className = 'element-placeholder';
+        placeholderLan.style.gridColumn = '3';
+        placeholderLan.style.gridRow = '6';
+        placeholderLan.innerHTML = '57-71';
+
+        const placeholderAct = document.createElement('div');
+        placeholderAct.className = 'element-placeholder';
+        placeholderAct.style.gridColumn = '3';
+        placeholderAct.style.gridRow = '7';
+        placeholderAct.innerHTML = '89-103';
+
+        elementsData.forEach(el => {
+            const card = document.createElement('div');
+            card.className = 'element';
+            card.setAttribute('data-category', el.c);
+            card.style.gridColumn = el.col;
+            card.style.gridRow = el.row;
+
+            card.innerHTML = `
+                <span class="number">${el.n}</span>
+                <span class="symbol">${el.s}</span>
+                <span class="name">${el.name}</span>
+                <span class="mass">${el.m}</span>
+            `;
+
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.element').forEach(e => e.classList.remove('selected'));
+                card.classList.add('selected');
+
+                document.getElementById('detNum').textContent = el.n;
+                document.getElementById('detSym').textContent = el.s;
+                document.getElementById('detName').textContent = el.name;
+                document.getElementById('detMass').textContent = `${el.m} u`;
+                document.getElementById('detCat').textContent = el.c.toUpperCase();
+                document.getElementById('detPhase').textContent = el.phase;
+                document.getElementById('detGP').textContent = el.gp;
+                document.getElementById('detEN').textContent = el.en;
+                document.getElementById('detDensity').textContent = el.density;
+                document.getElementById('detMelt').textContent = el.melt;
+                document.getElementById('detBoil').textContent = el.boil;
+                document.getElementById('detIE').textContent = el.ie;
+                document.getElementById('detConfig').textContent = el.config;
+
+                const computedColor = getComputedStyle(card).getPropertyValue('--cat-color');
+                ultraCard.style.setProperty('--active-color', computedColor);
+                previewBox.style.setProperty('--active-color', computedColor);
+            });
+
+            container.appendChild(card);
+        });
+
+        container.appendChild(placeholderLan);
+        container.appendChild(placeholderAct);
+
+        const buttons = document.querySelectorAll('.cat-btn');
+        const elements = document.querySelectorAll('.element');
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const selectedCategory = button.getAttribute('data-category');
+
+                elements.forEach(el => {
+                    const elCategory = el.getAttribute('data-category');
+                    if (selectedCategory === 'all' || elCategory === selectedCategory) {
+                        el.classList.remove('dimmed');
+                    } else {
+                        el.classList.add('dimmed');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
